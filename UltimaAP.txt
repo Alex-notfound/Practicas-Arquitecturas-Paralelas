@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
+//int compararBloques(int filaImg1Bloque1, int colBloque1, IplImage* imagen1, int filaImg1Bloque2, int colBloque2, IplImage* imagen2);
+//int sustituirBloque(int filaImg1Bloque1, int colBloque1, IplImage* imagen1, int filaImg1Bloque2, int colBloque2, IplImage* imagen2);
+
+int main(int argc, char** argv) {
+
+    printf("holi");
+    if (argc != 3) {
+        printf("Error: Usage %s image_file_name\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    //CV_LOAD_IMAGE_COLOR = 1 forces the resultant IplImage to be colour.
+    //CV_LOAD_IMAGE_GRAYSCALE = 0 forces a greyscale IplImage.
+    //CV_LOAD_IMAGE_UNCHANGED = -1
+    IplImage* img1 = cvLoadImage(argv[1], CV_LOAD_IMAGE_UNCHANGED);
+    IplImage* img2 = cvLoadImage(argv[2], CV_LOAD_IMAGE_UNCHANGED); //ESTA ES LA IMAGEN, CONFIRMED
+    // Always check if the program can find the image file
+    if (!img1 || !img2) {
+        printf("Error: file %s or %s not found\n", argv[1], argv[2]);
+        return EXIT_FAILURE;
+    }
+
+    int filaImg1, columnaImg1, diferencia, filaSel, colSel, filaImg2, columnaImg2, diferenciaAcum;
+
+    //Mientras filaImg1 sea < que altura de img1
+    for (filaImg1 = 0; filaImg1 < img1->widthStep; filaImg1 += 16) {
+        //Mientras columna sea < que ancho de img1
+
+        for (columnaImg1 = 0; columnaImg1 < img1->height; columnaImg1 += 16) {
+            diferenciaAcum = 30000;
+            //Mientras filaImg1 sea < que altura de img2
+
+            for (filaImg2 = 0; filaImg2 < img2->widthStep; filaImg2 += 16) {
+                //Mientras columna sea < que ancho de img2
+
+                for (columnaImg2 = 0; columnaImg2 < img1->height; columnaImg2 += 16) {
+                    printf("HOLI2");
+                    diferencia = compararBloques(filaImg1, columnaImg1, img1, filaImg2, columnaImg2, img2);
+                    if (diferenciaAcum > diferencia) {
+                        diferenciaAcum = diferencia;
+                        filaSel = filaImg2;
+                        colSel = columnaImg2;
+                    }
+                }
+            }
+            //            sustituirBloque(filaImg1, columnaImg1, img1, filaSel, colSel, img2);
+            cvNamedWindow("Ventana", CV_WINDOW_AUTOSIZE);
+            cvWaitKey(1);
+            cvShowImage("Ventana", img1);
+        }
+    }
+    // crea y muestras las ventanas con las imagenes
+    //    cvNamedWindow("Ventana", CV_WINDOW_AUTOSIZE);
+    //    cvShowImage("Ventana", copia);
+    cvWaitKey(1);
+    // memory release for images before exiting the application
+    cvReleaseImage(&img1);
+    //    cvReleaseImage(&copia);
+    // Self-explanatory
+    cvDestroyWindow("Ventana");
+    //    cvDestroyWindow("Ventana");
+    return (EXIT_SUCCESS);
+}
+
+int compararBloques(int filaImg1Bloque1, int colBloque1, IplImage* imagen1, int filaImg1Bloque2, int colBloque2, IplImage* imagen2) {
+
+    int i,col , diferencia = 0;
+
+    for (i = 0; i < 16; i++) {
+        unsigned char *pImg1 = (unsigned char *) imagen1->imageData + (filaImg1Bloque1 + i) * (imagen1->widthStep) + (colBloque1 * 3);
+        unsigned char *pImg2 = (unsigned char *) imagen2->imageData + (filaImg1Bloque2 + i) * (imagen2->widthStep) + (colBloque2 * 3);
+        for (col = 0; col < 16; col++) {
+            diferencia += abs(*pImg1++ - *pImg2++);
+        }
+    }
+    return diferencia;
+}
+
+int sustituirBloque(int filaImg1Bloque1, int colBloque1, IplImage* imagen1, int filaImg1Bloque2, int colBloque2, IplImage* imagen2) {
+
+    int fila, columna;
+    for (fila = 0; fila < 16; fila++) {
+        //filaImg1Bloque1 es la fila inicial y le vas sumando la de la iteracion y multiplicas por ancho para pasar a la siguiente fila
+        unsigned char *pImg1 = (unsigned char *) imagen1->imageData + ((filaImg1Bloque1 + fila) * imagen1->widthStep) + (colBloque1 * 3);
+        unsigned char *pImg2 = (unsigned char *) imagen2->imageData + ((filaImg1Bloque2 + fila) * imagen2->widthStep) + (colBloque2 * 3);
+
+        for (columna = 0; columna < 16; columna++) {
+            *pImg1++ = *pImg2++;
+            *pImg1++ = *pImg2++;
+            *pImg1++ = *pImg2++;
+        }
+    }
+    return 0;
+}
